@@ -3,15 +3,15 @@
 	--------------------------------------------
 	Copyright 2009 Kevin Dolan
 	-http://www.thekevindolan.com
-	
+
 	Code licensed under the MIT license
 	-See license.txt
-	
+
 	v0.2
 */
 
 //These vars are used to hold all jsAnimManagers
-var jsAnimManagers = new Array();
+var jsAnimManagers = [];
 var jsAnimManagerId = 0;
 
 /*! public, accessible
@@ -26,94 +26,94 @@ function jsAnimManager(timestep) {
 	this.myId = jsAnimManagerId;
 	jsAnimManagerId++;
 
-	if(timestep)
+	if (timestep)
 		this.timestep = timestep;
-	else	
+	else
 		this.timestep = 40;
-	
+
 	this.paused = false;
-	
-	this.animObjects = new Array();
+
+	this.animObjects = [];
 	this.index = 0;
-	
+
 	//Used internally to process a single frame of all active animations
-	this.step = function() {
-		if(!this.paused) {
-			for(x in this.animObjects) {
+	this.step = function () {
+		if (!this.paused) {
+			for (var x in this.animObjects) {
 				this.animObjects[x].step();
 			}
-			setTimeout("jsAnimManagers["+this.myId+"].step()",this.timestep);
+			setTimeout("jsAnimManagers[" + this.myId + "].step()", this.timestep);
 		}
 	};
-	
+
 	//Used internally to kill a jsAnimObject
-	this.kill = function(id) {
+	this.kill = function (id) {
 		delete this.animObjects[id];
 	};
-	
+
 	/*! public
 		Called to create a new animation object
 		Params:
 			-objId : id of object being controlled
 	*/
-	this.createAnimObject = function(objId) {
+	this.createAnimObject = function (objId) {
 		var el = document.getElementById(objId);
 		var id = this.index;
 		this.animObjects[id] = new jsAnimObject(el, id, this);
 		this.index++;
 		return this.animObjects[id];
 	};
-	
+
 	/*! public
 		Called to pause the animation manager
 	*/
-	this.pause = function() {
+	this.pause = function () {
 		this.paused = true;
 	};
-	
+
 	/*! public
 		Called to unpause the animation manager
 	*/
-	this.resume = function() {
+	this.resume = function () {
 		this.paused = false;
 		this.step();
 	};
-	
+
 	/*! public
 		Called to set the appropriate style values to allow position to be controlled by jsAnim
 		Params:
 			-objId : id of object to be registered
 			-[fixed] : fixed positioning, false to absolute fixed, defaults to false
 	*/
-	this.registerPosition = function(objId, fixed) {
+	this.registerPosition = function (objId, fixed) {
 		var el = document.getElementById(objId);
 		var width = el.offsetWidth;
 		var height = el.offsetHeight;
-		
-		if(fixed)
+
+		if (fixed)
 			el.style.position = "fixed";
 		else
 			el.style.position = "absolute";
-		
+
 		el.style.top = "0px";
 		el.style.left = "50%";
-		el.halfWidth = Math.floor(width/2);
-		el.halfHeight = Math.floor(height/2);
-		el.style.marginLeft = (-el.halfWidth)+"px";
-		el.style.marginTop = (-el.halfHeight)+"px";
-		
+		el.halfWidth = Math.floor(width / 2);
+		el.halfHeight = Math.floor(height / 2);
+		el.style.marginLeft = (-el.halfWidth) + "px";
+		el.style.marginTop = (-el.halfHeight) + "px";
+
 		el.positionRegistered = true;
-		
+
 		/*! public
 			Called to manually set the position of this object
 		*/
-		el.setPosition = function(x, y) {
-			this.style.marginLeft = (x - this.halfWidth)+"px";
-			this.style.marginTop = (y - this.halfHeight)+"px";
+		el.setPosition = function (x, y) {
+			this.style.marginLeft = (x - this.halfWidth) + "px";
+			this.style.marginTop = (y - this.halfHeight) + "px";
 		};
-		
+
 	};
-	
+
 	this.step();
 	return true;
 }
@@ -123,29 +123,29 @@ function jsAnimManager(timestep) {
 	Used internally to hold the state of a single animation manager
 	Params:
 		-obj : object being animated
-		
+
 */
 function jsAnimObject(obj, id, manager) {
-	
+
 	this.id = id;
 	this.obj = obj;
 	this.paused = false;
-	this.animEntries = new Array();
-	this.animLoops = new Array();
+	this.animEntries = [];
+	this.animLoops = [];
 	this.current = 0;
 	this.manager = manager;
-	
-	this.step = function() {
-		if(!this.paused) {
+
+	this.step = function () {
+		if (!this.paused) {
 			//Ugly code to get only the first element in the array
-			for(x in this.animEntries) {
+			for (var x in this.animEntries) {
 				var finished = this.animEntries[x].step();
-				if(finished) {
-					this.animLoops[x]--;
+				if (finished) {
+					this.animLoops[x] --;
 					this.animEntries[x].current = 0;
 					this.animEntries[x].onLoop();
 				}
-				if(this.animLoops[x] == 0) {
+				if (this.animLoops[x] === 0) {
 					this.animEntries[x].onComplete();
 					delete this.animEntries[x];
 				}
@@ -153,7 +153,7 @@ function jsAnimObject(obj, id, manager) {
 			}
 		}
 	};
-	
+
 	/*! public
 		Called to add an animation to the chain
 		Params:
@@ -167,68 +167,72 @@ function jsAnimObject(obj, id, manager) {
 				- [onLoop] : the callback function for loop completion
 				- [onComplete] : the callback function for animation completion
 	*/
-	this.add = function(params) {
-		
+	this.add = function (params) {
+
 		var property = params.property;
-		var from = params.from
+		var from = params.from;
 		var to = params.to;
 		var duration = params.duration;
-		if(params.ease)
-			var ease = params.ease;
+		var ease;
+		if (params.ease)
+			ease = params.ease;
 		else
-			var ease = jsAnimEase.linear;
-		if(params.loop)
-			var loop = params.loop;
+			ease = jsAnimEase.linear;
+		var loop;
+		if (params.loop)
+			loop = params.loop;
 		else
-			var loop = 1;
-		if(params.onLoop)
-			var onLoop = params.onLoop;
+			loop = 1;
+		var onLoop;
+		if (params.onLoop)
+			onLoop = params.onLoop;
 		else
-			var onLoop = function() {};
-		if(params.onComplete)
-			var onComplete = params.onComplete;
+			onLoop = function () {};
+		var onComplete;
+		if (params.onComplete)
+			onComplete = params.onComplete;
 		else
-			var onComplete = function() {};
-			
+			onComplete = function () {};
+
 		this.animEntries[this.current] = new jsAnimEntry(this.obj, property, from, to, duration, this.manager.timestep, ease, onLoop, onComplete);
 		this.animLoops[this.current] = loop;
-		
+
 		this.current++;
-		
+
 	};
-	
+
 	/*! public
 		Called to skip the current animation, can be used to exit an infinite loop
 	*/
-	this.skip = function() {
+	this.skip = function () {
 		//Ugly code to get only the first element in the array
-		for(x in this.animEntries) {
+		for (var x in this.animEntries) {
 			delete this.animEntries[x];
 			break;
 		}
 	};
-	
+
 	/*! public
 		Called to pause this animator
 	*/
-	this.pause = function() {
+	this.pause = function () {
 		this.paused = true;
 	};
-	
+
 	/*! public
 		Called to resum this animator
 	*/
-	this.resume = function() {
+	this.resume = function () {
 		this.paused = false;
 	};
-	
+
 	/*! public
 		Called to kill this animator
 	*/
-	this.kill = function() {
+	this.kill = function () {
 		this.manager.kill(this.id);
 	};
-	
+
 	return true;
 }
 
@@ -241,13 +245,13 @@ function jsAnimObject(obj, id, manager) {
 		-y : y coordinate, 0 is top, positive id below
 */
 function Pos(x, y) {
-	
+
 	//public
 	this.x = x;
-	
+
 	//public
 	this.y = y;
-	
+
 	return true;
 }
 
@@ -259,13 +263,13 @@ function Pos(x, y) {
 		-h : height
 */
 function Dim(w, h) {
-	
+
 	//public
 	this.w = w;
-	
+
 	//public
 	this.h = h;
-	
+
 	return true;
 }
 
@@ -278,20 +282,20 @@ function Dim(w, h) {
 		-b : blue value (0,255)
 */
 function Col(r, g, b) {
-	
+
 	//public
 	this.r = r;
-	
+
 	//public
 	this.g = g;
-	
+
 	//public
 	this.b = b;
-	
+
 	return true;
 }
 
-/*! 
+/*!
 	jsAnimEntry object constructor
 	Used internally to hold the state of single animation entry
 	Params:
@@ -305,7 +309,7 @@ function Col(r, g, b) {
 		-onComplete : called after completion
 */
 function jsAnimEntry(obj, property, from, to, duration, timestep, ease, onLoop, onComplete) {
-	
+
 	this.obj = obj;
 	this.property = property;
 	this.from = from;
@@ -316,29 +320,28 @@ function jsAnimEntry(obj, property, from, to, duration, timestep, ease, onLoop, 
 	this.current = 0;
 	this.onLoop = onLoop;
 	this.onComplete = onComplete;
-	
+
 	/*!
 		Used internally to move the object one step
 		Returns : true if this anim entry has completed, false otherwise
 	*/
-	this.step = function() {
-		if(!this.from)
+	this.step = function () {
+		if (!this.from)
 			this.from = this.property.current(this.obj);
-	
-		if(this.current >= this.duration) {
-			var p = this.ease.transform(1);
+		var p;
+		if (this.current >= this.duration) {
+			p = this.ease.transform(1);
 			this.property.update(this.obj, this.from, this.to, p);
 			return true;
-		}
-		else {
+		} else {
 			var t = this.current / this.duration;
-			var p = this.ease.transform(t);
+			p = this.ease.transform(t);
 			this.property.update(this.obj, this.from, this.to, p);
 			this.current += this.timestep;
 			return false;
 		}
 	};
-	
+
 	return true;
 }
 
@@ -347,116 +350,115 @@ function jsAnimEntry(obj, property, from, to, duration, timestep, ease, onLoop, 
 	Used to control easing
 	Methods:
 		transform : Transform a number 0-1 representing a time proportion
-			to a new number 0-1 representing a progress proportion 
+			to a new number 0-1 representing a progress proportion
 */
 var jsAnimEase = {
-	
+
 	/*!public
 		Constant Rate
 	*/
-	linear : {
-		transform : function(t) {
+	linear: {
+		transform: function (t) {
 			return t;
 		}
 	},
-	
+
 	/*!public
 		Starts slow, then speeds up
 	*/
-	parabolicPos : {
-		transform : function(t) {
+	parabolicPos: {
+		transform: function (t) {
 			return t * t;
 		}
 	},
-	
+
 	/*!public
 		Starts fast, then slows down
 	*/
-	parabolicNeg : {
-		transform : function(t) {
-			return 1 - (t-1) * (t-1);
+	parabolicNeg: {
+		transform: function (t) {
+			return 1 - (t - 1) * (t - 1);
 		}
 	},
-	
+
 	/*!public
 		Overshoots target then returns to target
 		Params:
 			-g : overshoot amount [0-1]
 	*/
-	backout : function(g) {
+	backout: function (g) {
 		return {
-			transform : function(t) {
+			transform: function (t) {
 				return (-1 * t * (t + g - 2)) / (1 - g);
 			}
 		};
 	},
-	
+
 	/*!public
 		Backs up a bit then moves to target
 		Params:
 			-g : backup amount [0-1]
 	*/
-	backin : function(g) {
+	backin: function (g) {
 		return {
-			transform : function(t) {
-				return 1 + ((t+1-g) * ((t+1-g) + g - 2)) / (1 - g);
+			transform: function (t) {
+				return 1 + ((t + 1 - g) * ((t + 1 - g) + g - 2)) / (1 - g);
 			}
 		};
 	},
-	
+
 	/*!public
 		Goes to target and then back at constant rate
 	*/
-	bounceLinear : {
-		transform : function(t) {
-			if(t < 0.5)
+	bounceLinear: {
+		transform: function (t) {
+			if (t < 0.5)
 				return 2 * t;
 			else
-				return 1 - 2 * (t - 0.5)
+				return 1 - 2 * (t - 0.5);
 		}
 	},
-	
+
 	/*!public
 		Goes to target and then back at variable rate
 	*/
-	bounceParabolic : {
-		transform : function(t) {
-			return -4 * t * (t-1);
+	bounceParabolic: {
+		transform: function (t) {
+			return -4 * t * (t - 1);
 		}
 	},
-	
+
 	/*!public
 		Goes to target and then back smoothly
 	*/
-	bounceSmooth : {
-		transform : function(t) {
+	bounceSmooth: {
+		transform: function (t) {
 			return 0.5 - 0.5 * Math.cos(2 * Math.PI * t);
 		}
 	}
-}
+};
 
 /*!
 	Utility objects for internal use
 */
 var jsAnimUtil = {
 
-	interp : function (v1, v2, percent) {
-		if(isNaN(v1))
+	interp: function (v1, v2, percent) {
+		if (isNaN(v1))
 			v1 = 0;
-		if(isNaN(v2))
+		if (isNaN(v2))
 			v2 = 0;
-		var v =  v1 + percent * (v2-v1);
+		var v = v1 + percent * (v2 - v1);
 		return Math.floor(v);
 	},
-	
-	getCSS : function (elem, field) {
+
+	getCSS: function (elem, field) {
 		var css = document.defaultView && document.defaultView.getComputedStyle ?
-			document.defaultView.getComputedStyle(elem, null)
-			: elem.currentStyle || elem.style;
+			document.defaultView.getComputedStyle(elem, null) : elem.currentStyle || elem.style;
 		return css[field];
 	},
-	
-	explode : function ( delimiter, string, limit ) {
+
+	explode: function (delimiter, string, limit) {
 		// http://kevin.vanzonneveld.net
 		// +     original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
 		// +     improved by: kenneth
@@ -467,36 +469,35 @@ var jsAnimUtil = {
 		// *     returns 1: {0: 'Kevin', 1: 'van', 2: 'Zonneveld'}
 		// *     example 2: explode('=', 'a=bc=d', 2);
 		// *     returns 2: ['a', 'bc=d']
-	 
-		var emptyArray = { 0: '' };
-		
+
+		var emptyArray = {
+			0: ''
+		};
+
 		// third argument is not required
-		if ( arguments.length < 2 ||
+		if (arguments.length < 2 ||
 			typeof arguments[0] == 'undefined' ||
-			typeof arguments[1] == 'undefined' )
-		{
+			typeof arguments[1] == 'undefined') {
 			return null;
 		}
-	 
-		if ( delimiter === '' ||
+
+		if (delimiter === '' ||
 			delimiter === false ||
-			delimiter === null )
-		{
+			delimiter === null) {
 			return false;
 		}
-	 
-		if ( typeof delimiter == 'function' ||
+
+		if (typeof delimiter == 'function' ||
 			typeof delimiter == 'object' ||
 			typeof string == 'function' ||
-			typeof string == 'object' )
-		{
+			typeof string == 'object') {
 			return emptyArray;
 		}
-	 
-		if ( delimiter === true ) {
+
+		if (delimiter === true) {
 			delimiter = '1';
 		}
-		
+
 		if (!limit) {
 			return string.toString().split(delimiter.toString());
 		} else {
@@ -508,7 +509,7 @@ var jsAnimUtil = {
 			return partA;
 		}
 	}
-}
+};
 
 /*! public
 	Prop objects
@@ -521,500 +522,505 @@ var Prop = {
 	/*! public
 		Wait, while doing no animating
 	*/
-	wait : {
-		update : function(obj, from, to, percent) {},
-		current : function(obj) {return 0;}
+	wait: {
+		update: function (obj, from, to, percent) {},
+		current: function (obj) {
+			return 0;
+		}
 	},
 
 	/*! public
 		Follows a linear path
 	*/
-	position : {
-		update : function(obj, from, to, percent) {
+	position: {
+		update: function (obj, from, to, percent) {
 			var x = jsAnimUtil.interp(from.x, to.x, percent);
 			var y = jsAnimUtil.interp(from.y, to.y, percent);
-			
+
 			obj.setPosition(x, y);
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			var left = parseInt(obj.style.marginLeft);
 			var top = parseInt(obj.style.marginTop);
 			var x = left + obj.halfWidth;
 			var y = top + obj.halfHeight;
-			return new Pos(x,y);
+			return new Pos(x, y);
 		}
 	},
-	
+
 	/*! public
 		Follows a semicircular path
 		Params:
 			-clockwise : True for clockwise, false otherwise
 	*/
-	positionSemicircle : function(clockwise) { 
+	positionSemicircle: function (clockwise) {
 		return {
-			update : function(obj, from, to, percent) {
+			update: function (obj, from, to, percent) {
 				var centerX = (from.x + to.x) / 2;
 				var centerY = (from.y + to.y) / 2;
-				
+
 				var h = centerY - from.y;
 				var w = from.x - centerX;
-				
+
 				var dist = Math.sqrt(h * h + w * w);
-				
-				if(w == 0) {
-					if(h > 0)
-						var initAngle = - Math.PI / 2;
+
+				var initAngle;
+				if (w === 0) {
+					if (h > 0)
+						initAngle = -Math.PI / 2;
 					else
-						var initAngle = Math.PI / 2;
-				}
-				else {
+						initAngle = Math.PI / 2;
+				} else {
 					var atan = Math.atan(h / Math.abs(w));
-					if(w > 0)
-						var initAngle = atan;
+					if (w > 0)
+						initAngle = atan;
 					else {
-						var initAngle = Math.PI - atan;
+						initAngle = Math.PI - atan;
 					}
 				}
-				
-				if(clockwise)
-					var addAngle = - percent * Math.PI;
+
+				var addAngle;
+				if (clockwise)
+					addAngle = -percent * Math.PI;
 				else
-					var addAngle = percent * Math.PI;	
-					
+					addAngle = percent * Math.PI;
+
 				var angle = initAngle + addAngle;
-				
+
 				var x = Math.floor(centerX + dist * Math.cos(angle));
 				var y = Math.floor(centerY - dist * Math.sin(angle));
-				
+
 				obj.setPosition(x, y);
 			},
-			
-			current : function(obj) {
+
+			current: function (obj) {
 				var left = parseInt(obj.style.marginLeft);
 				var top = parseInt(obj.style.marginTop);
 				var x = left + obj.halfWidth;
 				var y = top + obj.halfHeight;
-				return new Pos(x,y);
+				return new Pos(x, y);
 			}
-		}
+		};
 	},
-	
+
 	/*! public
 		Follows a circular path through target then back to start
 		Params:
 			-clockwise : True for clockwise, false otherwise
 	*/
-	positionCircle : function(clockwise) { 
+	positionCircle: function (clockwise) {
 		return {
-			update : function(obj, from, to, percent) {
+			update: function (obj, from, to, percent) {
 				var centerX = (from.x + to.x) / 2;
 				var centerY = (from.y + to.y) / 2;
-				
+
 				var h = centerY - from.y;
 				var w = from.x - centerX;
-				
+
 				var dist = Math.sqrt(h * h + w * w);
-				
-				if(w == 0) {
-					if(h > 0)
-						var initAngle = - Math.PI / 2;
+
+				var initAngle;
+				if (w === 0) {
+					if (h > 0)
+						initAngle = -Math.PI / 2;
 					else
-						var initAngle = Math.PI / 2;
-				}
-				else {
+						initAngle = Math.PI / 2;
+				} else {
 					var atan = Math.atan(h / Math.abs(w));
-					if(w > 0)
-						var initAngle = atan;
+					if (w > 0)
+						initAngle = atan;
 					else {
-						var initAngle = Math.PI - atan;
+						initAngle = Math.PI - atan;
 					}
 				}
-				
-				if(clockwise)
-					var addAngle = 2 * percent * Math.PI;
+
+				var addAngle;
+				if (clockwise)
+					addAngle = 2 * percent * Math.PI;
 				else
-					var addAngle = -2 * percent * Math.PI;	
-					
+					addAngle = -2 * percent * Math.PI;
+
 				var angle = initAngle + addAngle;
-				
+
 				var x = Math.floor(centerX + dist * Math.cos(angle));
 				var y = Math.floor(centerY + dist * Math.sin(angle));
-				
+
 				obj.setPosition(x, y);
 			},
-			
-			current : function(obj) {
+
+			current: function (obj) {
 				var left = parseInt(obj.style.marginLeft);
 				var top = parseInt(obj.style.marginTop);
 				var x = left + obj.halfWidth;
 				var y = top + obj.halfHeight;
-				return new Pos(x,y);
+				return new Pos(x, y);
 			}
-		}
+		};
 	},
-	
+
 	//public
-	top : {
-		update : function(obj, from, to, percent)  {
+	top: {
+		update: function (obj, from, to, percent) {
 			obj.style.top = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'top'));
 		}
-		
+
 	},
-	
+
 	//public
-	right : {
-		update : function(obj, from, to, percent)  {
+	right: {
+		update: function (obj, from, to, percent) {
 			obj.style.right = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'right'));
 		}
 	},
-	
+
 	//public
-	bottom : {
-		update : function(obj, from, to, percent)  {
+	bottom: {
+		update: function (obj, from, to, percent) {
 			obj.style.bottom = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'bottom'));
 		}
 	},
-	
+
 	//public
-	left : {
-		update : function(obj, from, to, percent)  {
+	left: {
+		update: function (obj, from, to, percent) {
 			obj.style.left = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'left'));
 		}
 	},
-	
+
 	//public
-	margin : {
-		update : function(obj, from, to, percent)  {
+	margin: {
+		update: function (obj, from, to, percent) {
 			obj.style.margin = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'margin'));
 		}
 	},
-	
+
 	//public
-	marginTop : {
-		update : function(obj, from, to, percent)  {
+	marginTop: {
+		update: function (obj, from, to, percent) {
 			obj.style.marginTop = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'marginTop'));
 		}
 	},
-	
+
 	//public
-	marginRight : {
-		update : function(obj, from, to, percent)  {
+	marginRight: {
+		update: function (obj, from, to, percent) {
 			obj.style.marginRight = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'marginRight'));
 		}
 	},
-	
+
 	//public
-	marginBottom : {
-		update : function(obj, from, to, percent)  {
+	marginBottom: {
+		update: function (obj, from, to, percent) {
 			obj.style.marginBottom = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'marginBottom'));
 		}
 	},
-	
+
 	//public
-	marginLeft : {
-		update : function(obj, from, to, percent)  {
+	marginLeft: {
+		update: function (obj, from, to, percent) {
 			obj.style.marginLeft = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'marginLeft'));
 		}
 	},
-	
+
 	//public
-	padding : {
-		update : function(obj, from, to, percent)  {
+	padding: {
+		update: function (obj, from, to, percent) {
 			obj.style.padding = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'padding'));
 		}
 	},
-	
+
 	//public
-	paddingTop : {
-		update : function(obj, from, to, percent)  {
+	paddingTop: {
+		update: function (obj, from, to, percent) {
 			obj.style.paddingTop = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'paddingTop'));
 		}
 	},
-	
+
 	//public
-	paddingRight : {
-		update : function(obj, from, to, percent)  {
+	paddingRight: {
+		update: function (obj, from, to, percent) {
 			obj.style.paddingRight = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'paddingRight'));
 		}
 	},
-	
+
 	//public
-	paddingBottom : {
-		update : function(obj, from, to, percent)  {
+	paddingBottom: {
+		update: function (obj, from, to, percent) {
 			obj.style.paddingBottom = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'paddingBottom'));
 		}
 	},
-	
+
 	//public
-	paddingLeft : {
-		update : function(obj, from, to, percent)  {
+	paddingLeft: {
+		update: function (obj, from, to, percent) {
 			obj.style.paddingLeft = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'paddingLeft'));
 		}
 	},
-	
+
 	//public
-	borderWidth : {
-		update : function(obj, from, to, percent)  {
+	borderWidth: {
+		update: function (obj, from, to, percent) {
 			obj.style.borderWidth = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'borderWidth'));
 		}
 	},
-	
+
 	//public
-	borderTopWidth : {
-		update : function(obj, from, to, percent)  {
+	borderTopWidth: {
+		update: function (obj, from, to, percent) {
 			obj.style.borderTopWidth = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'borderTopWidth'));
 		}
 	},
-	
+
 	//public
-	borderRightWidth : {
-		update : function(obj, from, to, percent)  {
+	borderRightWidth: {
+		update: function (obj, from, to, percent) {
 			obj.style.borderRightWidth = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'borderRightWidth'));
 		}
 	},
-	
+
 	//public
-	borderBottomWidth : {
-		update : function(obj, from, to, percent)  {
+	borderBottomWidth: {
+		update: function (obj, from, to, percent) {
 			obj.style.borderBottomWidth = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'borderBottomWidth'));
 		}
 	},
-	
+
 	//public
-	borderLeftWidth : {
-		update : function(obj, from, to, percent)  {
+	borderLeftWidth: {
+		update: function (obj, from, to, percent) {
 			obj.style.borderLeftWidth = jsAnimUtil.interp(from, to, percent) + "px";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'borderLeftWidth'));
 		}
 	},
-	
+
 	//public
-	fontSize : {
-		update : function(obj, from, to, percent)  {
+	fontSize: {
+		update: function (obj, from, to, percent) {
 			obj.style.fontSize = jsAnimUtil.interp(from, to, percent) + "pt";
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'fontSize'));
 		}
 	},
-	
+
 	//public
-	height : {
-		update : function(obj, from, to, percent)  {
+	height: {
+		update: function (obj, from, to, percent) {
 			var v = jsAnimUtil.interp(from, to, percent);
-			
+
 			obj.style.height = v + "px";
-			
+
 			//Update the position if registered
-			if(obj.positionRegistered) {
+			if (obj.positionRegistered) {
 				var y = parseInt(obj.style.marginTop) + obj.halfHeight;
-				obj.halfHeight = Math.floor(obj.offsetHeight/2);
+				obj.halfHeight = Math.floor(obj.offsetHeight / 2);
 				obj.style.marginTop = y - obj.halfHeight + "px";
 			}
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			var ht = jsAnimUtil.getCSS(obj, 'height');
-			if(ht == "auto")
+			if (ht == "auto")
 				return obj.offsetHeight;
 			else
 				return parseInt(ht);
 		}
 	},
-	
+
 	//public
-	width : {
-		update : function(obj, from, to, percent)  {
+	width: {
+		update: function (obj, from, to, percent) {
 			var v = jsAnimUtil.interp(from, to, percent);
-			
+
 			obj.style.width = v + "px";
-			
+
 			//Update the position if registered
-			if(obj.positionRegistered) {
+			if (obj.positionRegistered) {
 				var x = parseInt(obj.style.marginLeft) + obj.halfWidth;
-				obj.halfWidth = Math.floor(obj.offsetWidth/2);
+				obj.halfWidth = Math.floor(obj.offsetWidth / 2);
 				obj.style.marginLeft = x - obj.halfWidth + "px";
 			}
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return parseInt(jsAnimUtil.getCSS(obj, 'width'));
 		}
 	},
-	
+
 	//public
-	dimension : {
-		update : function(obj, from, to, percent)  {
+	dimension: {
+		update: function (obj, from, to, percent) {
 			var h = jsAnimUtil.interp(from.h, to.h, percent);
 			var w = jsAnimUtil.interp(from.w, to.w, percent);
-			
+
 			obj.style.height = h + "px";
 			obj.style.width = w + "px";
-			
+
 			//Update the position if registered
-			if(obj.positionRegistered) {
+			if (obj.positionRegistered) {
 				var y = parseInt(obj.style.marginTop) + obj.halfHeight;
-				obj.halfHeight = Math.floor(obj.offsetHeight/2);
+				obj.halfHeight = Math.floor(obj.offsetHeight / 2);
 				obj.style.marginTop = (y - obj.halfHeight) + "px";
-			
+
 				var x = parseInt(obj.style.marginLeft) + obj.halfWidth;
-				obj.halfWidth = Math.floor(obj.offsetWidth/2);
+				obj.halfWidth = Math.floor(obj.offsetWidth / 2);
 				obj.style.marginLeft = (x - obj.halfWidth) + "px";
 			}
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			var ht = jsAnimUtil.getCSS(obj, 'height');
-			if(ht == "auto")
-				var h = obj.offsetHeight;
+			var h;
+			if (ht == "auto")
+				h = obj.offsetHeight;
 			else
-				var h = parseInt(ht);
+				h = parseInt(ht);
 			var w = parseInt(jsAnimUtil.getCSS(obj, 'width'));
 			return new Dim(w, h);
 		}
 	},
-	
+
 	//public
-	color : {
-		update : function(obj, from, to, percent)  {
-			r = jsAnimUtil.interp(from.r, to.r, percent);
-			g = jsAnimUtil.interp(from.g, to.g, percent);
-			b = jsAnimUtil.interp(from.b, to.b, percent);
-			
-			obj.style.color = "rgb("+r+","+g+","+b+")";
-		},
-		
-		current : function(obj) {
-			var color = jsAnimUtil.getCSS(obj, 'color');
-			color = color.substring(4,color.length-1);
-			var rgb = jsAnimUtil.explode(",",color);
-			return new Col(parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2]));
-		}
-	},
-	
-	//public
-	backgroundColor : {
-		update : function(obj, from, to, percent)  {
+	color: {
+		update: function (obj, from, to, percent) {
 			r = jsAnimUtil.interp(from.r, to.r, percent);
 			g = jsAnimUtil.interp(from.g, to.g, percent);
 			b = jsAnimUtil.interp(from.b, to.b, percent);
 
-			obj.style.backgroundColor = "rgb("+r+","+g+","+b+")";
+			obj.style.color = "rgb(" + r + "," + g + "," + b + ")";
 		},
-		
-		current : function(obj) {
-			var color = jsAnimUtil.getCSS(obj, 'backgroundColor');
-			color = color.substring(4,color.length-1);
-			var rgb = jsAnimUtil.explode(",",color);
-			
+
+		current: function (obj) {
+			var color = jsAnimUtil.getCSS(obj, 'color');
+			color = color.substring(4, color.length - 1);
+			var rgb = jsAnimUtil.explode(",", color);
 			return new Col(parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2]));
 		}
 	},
-	
+
 	//public
-	borderColor : {
-		update : function(obj, from, to, percent)  {
+	backgroundColor: {
+		update: function (obj, from, to, percent) {
 			r = jsAnimUtil.interp(from.r, to.r, percent);
 			g = jsAnimUtil.interp(from.g, to.g, percent);
 			b = jsAnimUtil.interp(from.b, to.b, percent);
-			
-			obj.style.borderColor = "rgb("+r+","+g+","+b+")";
+
+			obj.style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
 		},
-		
-		current : function(obj) {
-			var color = jsAnimUtil.getCSS(obj, 'borderColor');
-			color = color.substring(4,color.length-1);
-			var rgb = jsAnimUtil.explode(",",color);
+
+		current: function (obj) {
+			var color = jsAnimUtil.getCSS(obj, 'backgroundColor');
+			color = color.substring(4, color.length - 1);
+			var rgb = jsAnimUtil.explode(",", color);
+
 			return new Col(parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2]));
 		}
 	},
-	
+
 	//public
-	opacity : {
-		update : function(obj, from, to, percent)  {
-			v = jsAnimUtil.interp(100*from, 100*to, percent);			
+	borderColor: {
+		update: function (obj, from, to, percent) {
+			r = jsAnimUtil.interp(from.r, to.r, percent);
+			g = jsAnimUtil.interp(from.g, to.g, percent);
+			b = jsAnimUtil.interp(from.b, to.b, percent);
+
+			obj.style.borderColor = "rgb(" + r + "," + g + "," + b + ")";
+		},
+
+		current: function (obj) {
+			var color = jsAnimUtil.getCSS(obj, 'borderColor');
+			color = color.substring(4, color.length - 1);
+			var rgb = jsAnimUtil.explode(",", color);
+			return new Col(parseInt(rgb[0]), parseInt(rgb[1]), parseInt(rgb[2]));
+		}
+	},
+
+	//public
+	opacity: {
+		update: function (obj, from, to, percent) {
+			v = jsAnimUtil.interp(100 * from, 100 * to, percent);
 			obj.style.opacity = v / 100;
 		},
-		
-		current : function(obj) {
+
+		current: function (obj) {
 			return jsAnimUtil.getCSS(obj, 'opacity');
 		}
 	}
-}
+};
